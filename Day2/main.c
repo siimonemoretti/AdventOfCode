@@ -5,20 +5,21 @@
 #include <errno.h>
 
 #define MAX_LENGTH 512
+#define PROJECT_2
 
 // Helper function to check if the levels meet the "safe" criteria
-bool is_safe_report(long *levels, size_t count)
+bool is_safe_report(long *levels, size_t count, bool ascending)
 {
    if (count < 3)
       return true; // A single level or no levels is always safe.
-
+#ifndef PROJECT_2
    bool ascending = levels[1] > levels[0];
-
+#endif
    for (size_t i = 1; i < count; i++)
    {
       long diff = levels[i] - levels[i - 1];
       // Check the difference range
-      if (abs(diff) < 1 || abs(diff) > 3)
+      if (labs(diff) < 1 || labs(diff) > 3)
       {
          return false;
       }
@@ -53,7 +54,26 @@ bool parse_line(const char *line)
       token = strtok(NULL, " ");
    }
 
-   return is_safe_report(levels, count);
+#ifdef PROJECT_2
+   // Check every possible permutation of the levels with 1 element removed
+   for (size_t i = 0; i < count; i++)
+   {
+      long new_levels[MAX_LENGTH];
+      size_t new_count = 0;
+      for (size_t j = 0; j < count; j++)
+      {
+         if (j != i)
+         {
+            new_levels[new_count++] = levels[j];
+         }
+      }
+      if (is_safe_report(new_levels, new_count, true) || is_safe_report(new_levels, new_count, false))
+         return true;
+   }
+   return false;
+#else
+   return is_safe_report(levels, count, true) || is_safe_report(levels, count, false);
+#endif
 }
 
 // Parse the entire file and count safe reports

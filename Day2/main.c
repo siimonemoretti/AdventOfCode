@@ -1,77 +1,84 @@
-/*
- * The engineers are trying to figure out which reports are safe. The Red-Nosed reactor safety systems can only tolerate levels that are either gradually
- * increasing or gradually decreasing. So, a report only counts as safe if both of the following are true:
- *    1. The levels are either all increasing or all decreasing.
- *    2. Any two adjacent levels differ by at least one and at most three.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #define MAX_LENGTH 512
 
+// Helper function to check if the levels meet the "safe" criteria
+bool is_safe_report(long *levels, size_t count)
+{
+   if (count < 3)
+      return true; // A single level or no levels is always safe.
+
+   bool ascending = levels[1] > levels[0];
+
+   for (size_t i = 1; i < count; i++)
+   {
+      long diff = levels[i] - levels[i - 1];
+      // Check the difference range
+      if (abs(diff) < 1 || abs(diff) > 3)
+      {
+         return false;
+      }
+      // Check monotonicity
+      if ((ascending && diff < 0) || (!ascending && diff > 0))
+      {
+         return false;
+      }
+   }
+   return true;
+}
+
+// Parse a single line of levels and check if it's safe
+bool parse_line(const char *line)
+{
+   long levels[MAX_LENGTH];
+   size_t count = 0;
+
+   // Tokenize the line into numbers
+   char *token = strtok((char *)line, " ");
+   while (token != NULL)
+   {
+      char *endptr;
+      errno = 0;
+      long value = strtol(token, &endptr, 10);
+      if (errno != 0 || *endptr != '\0')
+      {
+         fprintf(stderr, "Invalid number in input: %s\n", token);
+         return false;
+      }
+      levels[count++] = value;
+      token = strtok(NULL, " ");
+   }
+
+   return is_safe_report(levels, count);
+}
+
+// Parse the entire file and count safe reports
 int parse(FILE *fp)
 {
-   int ret = 0;
+   int safe_count = 0;
    char line[MAX_LENGTH];
-   // Ascending represents the order of the values
-   bool ascending, first_round, valid;
 
    while (fgets(line, sizeof(line), fp))
    {
-      line[strcspn(line, "\n")] = '\0'; // Subs the NL with NULL
-      // Tokenize the line
-      char *token = strtok(line, " ");
-      // Read first value
-      char *endptr;
-      errno = 0;
-      long old = strtol(token, &endptr, 10);
-      // Check for any errors
-      if (errno != 0 || *endptr != '\0')
-      {
-         fprintf(stderr, "Invalid input: %s\n", token);
-         return 0;
-      }
-      token = strtok(NULL, " ");
-      first_round = true;
-      valid = true;
+      // Remove the newline character
+      line[strcspn(line, "\n")] = '\0';
 
-      while (token)
+      if (strlen(line) == 0)
       {
-         errno = 0;
-         long val = strtol(token, &endptr, 10);
-         // Check for any errors
-         if (errno != 0 || *endptr != '\0')
-         {
-            fprintf(stderr, "Invalid input: %s\n", token);
-            return 0;
-         }
-         token = strtok(NULL, " ");
-         if (abs(old - val) < 1 || abs(old - val) > 3)
-            valid = false;
-         if (first_round)
-         {
-            first_round = false;
-            if (old > val)
-               ascending = false;
-            else
-               ascending = true;
-         }
-         else
-         {
-            if (ascending && old > val || !ascending && old < val)
-               valid = false;
-         }
-         old = val;
+         continue; // Skip empty lines
       }
-      if (valid)
-         ret++;
+
+      if (parse_line(line))
+      {
+         safe_count++;
+      }
    }
 
-   return ret;
+   return safe_count;
 }
 
 int main(int argc, char **argv)
@@ -81,16 +88,17 @@ int main(int argc, char **argv)
       fprintf(stderr, "Usage: %s <input_filename>\n", argv[0]);
       return EXIT_FAILURE;
    }
+
    FILE *fp = fopen(argv[1], "r");
    if (fp == NULL)
    {
-      printf("Error opening file %s\n", argv[1]);
+      perror("Error opening file");
       return EXIT_FAILURE;
    }
 
-   fprintf(stdout, "Result: %d\n", parse(fp));
+   int result = parse(fp);
+   printf("Result: %d\n", result);
 
    fclose(fp);
-
    return EXIT_SUCCESS;
 }

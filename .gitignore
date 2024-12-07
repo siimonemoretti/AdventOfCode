@@ -31,7 +31,8 @@ relative/path/to/dir/filename.extension
 relative/path/to/dir/anotherfile
 
 # Ignore DS_Store and template.c
-.DS_Store template.c
+.DS_Store 
+template.c
 
 # Ignore all the "test.txt" files in all the subdirectories of 2024 directory
 2024/**/test.txt

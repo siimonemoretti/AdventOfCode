@@ -15,8 +15,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
-// #define PART_2
+#define PART_2
 
 typedef struct
 {
@@ -55,6 +56,14 @@ int parse_line(char *line, Operation *op)
    return 1;
 }
 
+unsigned long long concatenate(unsigned long long a, unsigned long long b)
+{
+   char buffer[32];
+   sprintf(buffer, "%llu%llu", a, b);
+   return strtoull(buffer, NULL, 10);
+}
+
+#ifndef PART_2
 int is_computable(Operation op)
 {
    // We need to compute all the 2^op.n_operands possible operations
@@ -82,6 +91,36 @@ int is_computable(Operation op)
    }
    return 0;
 }
+#else
+bool is_result_achievable(int *nums, int n, unsigned long long target, unsigned long long current_result, int index) {
+    if (index == n) {
+        // Base case: all operands are processed
+        return current_result == target;
+    }
+
+    // Try addition
+    if (is_result_achievable(nums, n, target, current_result + nums[index], index + 1)) {
+        return true;
+    }
+
+    // Try multiplication
+    if (is_result_achievable(nums, n, target, current_result * nums[index], index + 1)) {
+        return true;
+    }
+
+    // Try concatenation
+    if (is_result_achievable(nums, n, target, concatenate(current_result, nums[index]), index + 1)) {
+        return true;
+    }
+
+    return false;
+}
+
+int is_computable(Operation op)
+{
+   return is_result_achievable(op.operands, op.n_operands, op.result, op.operands[0], 1);
+}
+#endif
 
 int main(int argc, char **argv)
 {

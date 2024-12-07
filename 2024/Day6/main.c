@@ -5,13 +5,15 @@
  * We want to know how many *distint* position the person will visit before getting out of the map.
  *
  * Part2:
+ * We can now insert 1 obstacle in the map.
+ * We want to know how many *distinct* configuration will generate a loop in the person's path.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// #define PART_2
+#define PART_2
 
 char **parse_file(FILE *fp, int *row, int *cols)
 {
@@ -44,6 +46,9 @@ void find_starting_position(char **map, int *x, int *y, int row, int cols)
          }
       }
    }
+   *x = -1;
+   *y = -1;
+   return;
 }
 
 int count_marks(char **map, int row, int cols)
@@ -154,6 +159,148 @@ int count_distinct_positions(char **map, int row, int cols)
    return count_marks(map, row, cols);
 }
 
+int is_arrow(char c)
+{
+   return c == '>' || c == '<' || c == '^' || c == 'v';
+}
+
+int check_for_loop(char **map, int row, int cols)
+{
+   // Algorithm: have a matrix of the same size as the map of type unsigned char (8 bits).
+   // In this matrix, we store a 1 if in that position we changed the direction of the arrow.
+   // If we step in a position that has a 1, we have a loop.
+   unsigned char **visited = malloc(row * sizeof(*visited));
+   for (int i = 0; i < row; i++)
+   {
+      visited[i] = malloc(cols * sizeof(**visited));
+      memset(visited[i], 0, cols);
+   }
+   int x = 0, y = 0;
+   find_starting_position(map, &x, &y, row, cols);
+   if (x == -1 || y == -1)
+   {
+      printf("Error: starting position not found:\n");
+      // Print the map
+      for (int i = 0; i < row; i++)
+      {
+         printf("%s", map[i]);
+      }
+      getchar();
+      return -1;
+   }
+   int dir; // 0-up, 1-right, 2-down, 3-left
+   switch (map[x][y])
+   {
+   case '>':
+      dir = 1;
+      break;
+   case '<':
+      dir = 3;
+      break;
+   case '^':
+      dir = 0;
+      break;
+   case 'v':
+      dir = 2;
+      break;
+   default:
+      printf("Invalid char @ (%d, %d): %c\n", x, y, map[x][y]);
+      return -1;
+   }
+   // We don't want to ruin the original map, so we'll use three variables: x, y and dir
+   while (1)
+   {
+      switch (dir)
+      {
+      case 0: // Moving upwards
+         if (x == 0)
+            return 0;
+         else if (map[x - 1][y] == '.')
+            x--;
+         else if (map[x - 1][y] == '#')
+         {
+            if (visited[x][y] == 1)
+               return 1;
+            visited[x][y] = 1;
+            // If we hit a wall, we want to change direction until we find a free space
+            if (map[x][y + 1] == '.')
+               dir = 1;
+            else if (map[x + 1][y] == '.')
+               dir = 2;
+            else if (map[x][y - 1] == '.')
+               dir = 3;
+         }
+         else if (is_arrow(map[x - 1][y]))
+            x--;
+         break;
+      case 1: // Moving right
+         if (y == cols - 1)
+            return 0;
+         else if (map[x][y + 1] == '.')
+            y++;
+         else if (map[x][y + 1] == '#')
+         {
+            if (visited[x][y] == 1)
+               return 1;
+            visited[x][y] = 1;
+            if (map[x + 1][y] == '.')
+               dir = 2;
+            else if (map[x][y - 1] == '.')
+               dir = 3;
+            else if (map[x - 1][y] == '.')
+               dir = 0;
+         }
+         else if (is_arrow(map[x][y + 1]))
+            y++;
+         break;
+      case 2: // Moving down
+         if (x == row - 1)
+            return 0;
+         else if (map[x + 1][y] == '.')
+            x++;
+         else if (map[x + 1][y] == '#')
+         {
+            if (visited[x][y] == 1)
+               return 1;
+            visited[x][y] = 1;
+            if (map[x][y - 1] == '.')
+               dir = 3;
+            else if (map[x - 1][y] == '.')
+               dir = 0;
+            else if (map[x][y + 1] == '.')
+               dir = 1;
+         }
+         else if (is_arrow(map[x + 1][y]))
+            x++;
+         break;
+      case 3: // Moving left
+         if (y == 0)
+            return 0;
+         else if (map[x][y - 1] == '.')
+            y--;
+         else if (map[x][y - 1] == '#')
+         {
+            if (visited[x][y] == 1)
+               return 1;
+            visited[x][y] = 1;
+            if (map[x - 1][y] == '.')
+               dir = 0;
+            else if (map[x][y + 1] == '.')
+               dir = 1;
+            else if (map[x + 1][y] == '.')
+               dir = 2;
+         }
+         else if (is_arrow(map[x][y - 1]))
+            y--;
+         break;
+      default:
+         printf("Invalid direction: %d\n", dir);
+         break;
+      }
+   }
+   return 0;
+}
+
 int main(int argc, char **argv)
 {
    if (argc != 2)
@@ -169,13 +316,29 @@ int main(int argc, char **argv)
    }
 
    char **map = NULL;
-   int row, cols, tot;
+   int row, cols, tot = 0;
    map = parse_file(fp, &row, &cols);
    printf("Map size: %d, %d\n", row, cols);
-
+#ifndef PART_2
    tot = count_distinct_positions(map, row, cols);
    printf("Total distinct positions visited: %d\n", tot);
-
+#else
+   // Loop through the map and insert an obstacle in each empty space
+   for (int i = 0; i < row; i++)
+   {
+      for (int j = 0; j < cols; j++)
+      {
+         if (map[i][j] == '.')
+         {
+            // printf("Inserting obstacle @ (%d, %d)\n", i, j);
+            map[i][j] = '#';
+            tot += check_for_loop(map, row, cols);
+            map[i][j] = '.';
+         }
+      }
+   }
+   printf("Total distinct configurations that generate a loop: %d\n", tot);
+#endif
    for (int i = 0; i < row; i++)
    {
       free(map[i]);

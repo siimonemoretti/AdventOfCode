@@ -2,18 +2,23 @@
  *
  *
  * Part2:
+ * We want to compute again the checksum but implementing a different ordering algorithm.
+ * Now, we start from the highest ID and we try to move it to the first space that contains it all. If no such space exists, we leave it there.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// #define PART_2
+#define PART_2
 
 typedef struct
 {
    unsigned char file_len;
    unsigned char space_len;
+#ifdef PART_2
+   unsigned char offset;
+#endif
 } Block;
 
 typedef struct
@@ -46,8 +51,12 @@ MemoryLayout *parse(FILE *fp)
          layout->blocks = realloc(layout->blocks, layout->block_size * sizeof(Block));
       }
 
+      // Write file len
       layout->blocks[layout->block_cnt].file_len = (unsigned char)(ch - '0');
-
+#ifdef PART_2
+      // Init offset
+      layout->blocks[layout->block_cnt].offset = 0;
+#endif
       ch = fgetc(fp);
       if (ch == EOF)
       {
@@ -71,6 +80,7 @@ MemoryLayout *parse(FILE *fp)
    return layout;
 }
 
+#ifndef PART_2
 unsigned long long compute_checksum(MemoryLayout *ml)
 {
    // Calculate the maximum possible memory size needed
@@ -130,7 +140,75 @@ unsigned long long compute_checksum(MemoryLayout *ml)
    free(memory);
    return checksum;
 }
+#else
+unsigned long long compute_checksum(MemoryLayout *ml)
+{
+   int max_memory_size = ml->block_cnt * 9;
+   int *memory = malloc(max_memory_size * sizeof(int));
+   // Init memory to all 0
+   memset(memory, 0, max_memory_size * sizeof(int));
+   unsigned long long checksum = 0;
+   int cnt = ml->block_cnt - 1;
+   while (cnt > 0)
+   {
+      // Read its size and search for a non occupied space
+      unsigned char size_needed = ml->blocks[cnt].file_len;
+      int tmp_offset = 0, found = 0;
+      for (int ii = 0; ii < cnt; ii++)
+      {
+         if (size_needed <= ml->blocks[ii].space_len)
+         {
+            tmp_offset += ml->blocks[ii].file_len;
+            tmp_offset += ml->blocks[ii].offset;
+#ifdef DEBUG
+            printf("Space found for %d @ %d\n", cnt, tmp_offset + ml->blocks[ii].offset);
+#endif
+            ml->blocks[ii].space_len -= size_needed;
+            ml->blocks[ii].offset += size_needed;
+            for (int kk = 0; kk < size_needed; kk++)
+            {
+               memory[tmp_offset + kk] = cnt;
+            }
+            found = 1;
+            break;
+         }
+#ifdef DEBUG
+         else
+         {
+            printf("%d space is not enough for %d, he needs %d\n", ml->blocks[ii].space_len, cnt, size_needed);
+         }
+#endif
+         tmp_offset += (ml->blocks[ii].file_len + ml->blocks[ii].space_len + ml->blocks[ii].offset);
+      }
+      if (!found) // No space was found, so write it to its current position
+      {
+#ifdef DEBUG
+         printf("No space found for %d, writing it @ %d\n", cnt, tmp_offset);
+#endif
+         for (int kk = 0; kk < size_needed; kk++)
+         {
+            memory[tmp_offset + kk] = cnt;
+         }
+      }
+      cnt--;
+   }
 
+   // Compute checksum
+   for (int i = 0; i < max_memory_size; i++)
+   {
+#ifdef DEBUG
+      printf("%d", memory[i]);
+#endif
+      checksum += memory[i] * i;
+   }
+#ifdef DEBUG
+   printf("\n");
+#endif
+
+   free(memory);
+   return checksum;
+}
+#endif
 int main(int argc, char **argv)
 {
    if (argc != 2)

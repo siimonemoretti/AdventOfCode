@@ -5,14 +5,16 @@
  * A trailhead is any position that starts one or more hiking trails - here, these positions will always have height 0.
  * A trailhead's score is the number of 9-height positions reachable from that trailhead via a hiking trail.
  * Note that if it is possible to reach a 9-height position from multiple trailheads, it is counted just once.
+ * 
  * Part2:
+ * Now, instead of counting just once, we want to count the number of 9-height positions reachable from each trailhead.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// #define PART_2
+#define PART_2
 
 typedef struct
 {
@@ -42,6 +44,7 @@ int is_out_of_map(int x, int y, int x_lim, int y_lim)
    return x < 0 || x >= x_lim || y < 0 || y >= y_lim;
 }
 
+#ifndef PART_2
 int find_trails(char **map, int x_lim, int y_lim, int x_pos, int y_pos, char prev_num, unsigned char **visited)
 {
    if (is_out_of_map(x_pos, y_pos, x_lim, y_lim))
@@ -61,6 +64,24 @@ int find_trails(char **map, int x_lim, int y_lim, int x_pos, int y_pos, char pre
    score += find_trails(map, x_lim, y_lim, x_pos, y_pos - 1, map[x_pos][y_pos], visited);
    return score;
 }
+#else
+int find_trails(char **map, int x_lim, int y_lim, int x_pos, int y_pos, char prev_num)
+{
+   if (is_out_of_map(x_pos, y_pos, x_lim, y_lim))
+      return 0;
+   if (map[x_pos][y_pos] == '9' && prev_num == '8')
+      return 1;
+   if (map[x_pos][y_pos] != prev_num + 1)
+      return 0;
+
+   int score = 0;
+   score += find_trails(map, x_lim, y_lim, x_pos + 1, y_pos, map[x_pos][y_pos]);
+   score += find_trails(map, x_lim, y_lim, x_pos - 1, y_pos, map[x_pos][y_pos]);
+   score += find_trails(map, x_lim, y_lim, x_pos, y_pos + 1, map[x_pos][y_pos]);
+   score += find_trails(map, x_lim, y_lim, x_pos, y_pos - 1, map[x_pos][y_pos]);
+   return score;
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -94,6 +115,7 @@ int main(int argc, char **argv)
       {
          if (map[xx][yy] == '0') // Call recursive function to find the path to 9 if the current position is a trailhead
          {
+#ifndef PART_2
             unsigned char **visited = malloc(x * sizeof(*visited));
             for (int i = 0; i < x; i++)
                visited[i] = calloc(y, sizeof(*visited[i]));
@@ -102,6 +124,12 @@ int main(int argc, char **argv)
             trailhead_score += find_trails(map, x, y, xx - 1, yy, '0', visited);
             trailhead_score += find_trails(map, x, y, xx, yy + 1, '0', visited);
             trailhead_score += find_trails(map, x, y, xx, yy - 1, '0', visited);
+#else
+            trailhead_score += find_trails(map, x, y, xx + 1, yy, '0');
+            trailhead_score += find_trails(map, x, y, xx - 1, yy, '0');
+            trailhead_score += find_trails(map, x, y, xx, yy + 1, '0');
+            trailhead_score += find_trails(map, x, y, xx, yy - 1, '0');
+#endif
 #ifdef DEBUG
             printf("Trailhead (%d,%d)'s score: %d\n", xx, yy + 1, trailhead_score);
 #endif

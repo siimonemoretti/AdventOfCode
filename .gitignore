@@ -36,3 +36,6 @@ template.c
 
 # Ignore all the "test.txt" files in all the subdirectories of 2024 directory
 2024/**/test.txt
+
+# Ignore vscode folder
+.vscode/

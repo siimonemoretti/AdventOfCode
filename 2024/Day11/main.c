@@ -15,7 +15,7 @@
 #define BUF_SIZE 65
 // #define PART_2
 
-int is_digit(char c)
+inline int is_digit(char c)
 {
    return (c >= '0' && c <= '9');
 }
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
    int word_index = 0;
    fgets(buf, BUF_SIZE, fp);
    int n_stones = 0;
-   
+
    // For each word we find, we loop 25 times and sum the number of stones that we'd obtain
    clock_t begin = clock();
    for (int i = 0; i <= strlen(buf); i++)
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 #ifdef DEBUG
          printf("Word: %s.\n", word);
 #endif
-         n_stones += blink(word, strlen(word), 75);
+         n_stones += blink(word, strlen(word), 25);
       }
       else
       {

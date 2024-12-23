@@ -26,14 +26,17 @@
  * Program: 0,1,5,4,3,0
  *
  * We have to determine what the program is trying to output.
+ * 
  * Part2:
+ * Find the lowest integer value for register A in order to obtain the output equal to the input program.
+ * For the example above, we have to find the lowest value of register A that will output 0,1,5,4,3,0.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// #define PART_2
+#define PART_2
 
 typedef struct
 {
@@ -43,7 +46,11 @@ typedef struct
 
 typedef struct
 {
+   #ifndef PART_2
    int A;
+   #else
+   unsigned long long A;
+   #endif
    int B;
    int C;
    Instruction *program;
@@ -59,7 +66,11 @@ void parse(FILE *fp, Computer *pc)
    int i = 0;
    // Get registers
    getline(&line, &len, fp);
+   #ifndef PART_2
    sscanf(line, "Register A: %d", &pc->A);
+   #else
+   sscanf(line, "Register A: %llu", &pc->A);
+   #endif
    getline(&line, &len, fp);
    sscanf(line, "Register B: %d", &pc->B);
    getline(&line, &len, fp);
@@ -162,7 +173,18 @@ void compute(Computer *pc)
          return;
       }
    }
-   printf("IP (%d) >= Program size (%ld), reached end of program\n", ip, pc->program_size);
+}
+
+int cmp(int *a, int *b, size_t size)
+{
+   for (size_t i = 0; i < size; i++)
+   {
+      if (a[i] != b[i])
+      {
+         return 0;
+      }
+   }
+   return 1;
 }
 
 int main(int argc, char **argv)
@@ -202,13 +224,48 @@ int main(int argc, char **argv)
    // Execute program
    compute(pc);
    // Print output
-   printf("Output: ");
+   printf("[PART1] Output: ");
    for (size_t i = 0; i < pc->output_size - 1; i++)
    {
       printf("%d,", pc->output[i]);
    }
    printf("%d\n", pc->output[pc->output_size - 1]);
 
+
+   /* PART 2 */
+   // Loop through all possible values of register A, and at the end check whether the output matches the program
+   // Decompose the Instruction array into an integer array
+   int *program = (int *)malloc(pc->program_size * 2 * sizeof(int));
+   for (size_t i = 0; i < pc->program_size; i++)
+   {
+      program[i * 2] = pc->program[i].opcode;
+      program[i * 2 + 1] = pc->program[i].operand;
+   }
+   for(unsigned long long i = 3337283687; i < 3337283689; i++)
+   {
+      pc->A = i;
+      pc->B = 0;
+      pc->C = 0;
+      pc->output = NULL;
+      pc->output_size = 0;
+      compute(pc);
+      // Print output
+      printf("%llu, Output: ", i);
+      for (size_t j = 0; j < pc->output_size - 1; j++)
+      {
+         printf("%d,", pc->output[j]);
+      }
+      printf("%d\n", pc->output[pc->output_size - 1]);
+      // Compare output array with program array
+      if (pc->output_size != (pc->program_size*2))
+         continue;
+      else if (cmp(program, pc->output, pc->output_size))
+      {
+         printf("[PART2] Register A: %llu\n", i);
+         break;
+      }
+   }
+   
    // Free memory
    free(pc->program);
    free(pc);

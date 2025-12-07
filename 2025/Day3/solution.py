@@ -1,4 +1,4 @@
-# Day 1
+# Day 3
 
 def part1():
    with open("input.txt", 'r') as f:

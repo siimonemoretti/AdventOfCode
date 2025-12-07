@@ -1,4 +1,12 @@
-# Challenge status 🌟🎄
+# Advent of Code solutions
+
+## 2025 Challenge status 🌟🎄
+
+| Day | Part 1 | Part 2 |
+|-----|--------|--------|
+| 01  |  ⭐    | ⭐      |
+
+## 2024 Challenge status 🌟🎄
 
 | Day | Part 1 | Part 2 |
 |-----|--------|--------|

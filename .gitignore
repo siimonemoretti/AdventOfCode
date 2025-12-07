@@ -24,12 +24,6 @@ bin/
 # Ignore all `library.jar` in `bin` dir
 */bin/library.jar
 
-# Ignore a file with extension
-relative/path/to/dir/filename.extension
-
-# Ignore a file without extension
-relative/path/to/dir/anotherfile
-
 # Ignore DS_Store and template.c
 .DS_Store 
 template.c

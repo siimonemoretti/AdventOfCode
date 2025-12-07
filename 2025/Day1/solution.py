@@ -44,7 +44,7 @@ def part2():
                      cnt += 1
                else:
                   idx = 100 - r
-            print(f"idx: {idx:02}, cnt: {cnt}")
+            print(f"idx: {idx:02}, cnt: {cnt}", end=" ")  # Avoid newline
    print(f"Part 2: {cnt}")
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 # Day 1
-import re
 
 def part1():
    tot = 0

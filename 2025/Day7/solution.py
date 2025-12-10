@@ -1,5 +1,4 @@
-# Day 6
-import math
+# Day 7 - 2025
 
 def part1():
    tot = 0
